@@ -2,12 +2,10 @@
 
 <div align="center">
   <a href="https://image-hosting-byshady.streamlit.app/">
-    <img src="https://static.streamlit.io/badges/streamlit_badge_black_white.svg" alt="Open in Streamlit">
+    <img src="https://static.streamlit.io/badges/streamlit_badge_black_white.svg" width="350" alt="Open in Streamlit">
   </a>
   <br><br>
-  <div style="border: 2px solid #6a11cb; border-radius: 20px; padding: 10px; display: inline-block; background: #0f0f12;">
-    <img src="assets/ImageSync.jpeg" width="800" style="border-radius: 10px;" alt="ImageSync Preview">
-  </div>
+  <img src="https://raw.githubusercontent.com/Shadyteal2/image-hosting-pub/main/assets/ImageSync.jpeg" width="95%" alt="ImageSync Preview">
 </div>
 
 ---
