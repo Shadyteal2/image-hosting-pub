@@ -21,14 +21,8 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
     
-    html, body, [data-testid="stAppViewContainer"] {
-        font-family: 'Inter', sans-serif;
-        background: #0f0f12;
-    }
-    
     .stApp {
-        background: linear-gradient(135deg, #0f0f12 0%, #1a1a2e 100%);
-        color: #e0e0e0;
+        font-family: 'Inter', sans-serif;
     }
     
     .main-header {
@@ -38,6 +32,15 @@ st.markdown("""
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         margin-bottom: 0.5rem;
+        display: flex;
+        align-items: baseline;
+        gap: 15px;
+    }
+
+    .main-header span {
+        -webkit-text-fill-color: #888899;
+        font-size: 1.5rem;
+        font-weight: 400;
     }
     
     .sub-header {
@@ -155,7 +158,7 @@ with st.sidebar:
 
 # --- Main Interface ---
 
-st.markdown('<div class="main-header">ImageSync Public <span style="font-size: 1.5rem; opacity: 0.7;">by Shady</span></div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">ImageSync Public <span>by Shady</span></div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-header">Professional Image Optimization & GitHub Hosting</div>', unsafe_allow_html=True)
 
 uploaded_files = st.file_uploader(
