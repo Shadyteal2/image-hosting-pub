@@ -155,7 +155,7 @@ with st.sidebar:
 
 # --- Main Interface ---
 
-st.markdown('<div class="main-header">ImageSync Public</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">ImageSync Public <span style="font-size: 1.5rem; opacity: 0.7;">by Shady</span></div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-header">Professional Image Optimization & GitHub Hosting</div>', unsafe_allow_html=True)
 
 uploaded_files = st.file_uploader(
