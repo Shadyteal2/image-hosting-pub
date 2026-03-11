@@ -2,7 +2,7 @@
 
 <div align="center">
   <a href="https://image-hosting-byshady.streamlit.app/">
-    <img src="https://static.streamlit.io/badges/streamlit_badge_black_white.svg" width="350" alt="Open in Streamlit">
+    <img src="https://static.streamlit.io/badges/streamlit_badge_black_white.svg" width="350" alt="Open the Site">
   </a>
   <br><br>
   <img src="https://raw.githubusercontent.com/Shadyteal2/image-hosting-pub/main/assets/ImageSync.jpeg" width="95%" alt="ImageSync Preview">
@@ -21,7 +21,7 @@ Built with **Streamlit**, **Pillow**, and the **GitHub REST API**, it offers a s
 ## ✨ Features
 
 - 🏎️ **Super Fast**: Multi-threaded image processing and API uploads.
-- 🎨 **WebP Optimization**: Automatically converts images to WebP (80% quality) for maximum performance.
+- 🎨 **WebP Optimization**: Automatically converts images to WebP (customizable compression) for maximum performance.
 - 📱 **Mobile Ready**: Runs in the browser; host images directly from your phone.
 - 🔒 **Privacy Focused**: No data collection. Credentials stay in session memory and vanish on reload.
 - 🛠️ **Developer Pro**: Get instant `raw.githubusercontent.com` links for your sites.
