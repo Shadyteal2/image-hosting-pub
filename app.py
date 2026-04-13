@@ -19,74 +19,170 @@ st.set_page_config(
 # --- Styling ---
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     
+    :root {
+        --bg-dark: #0A0A0B;
+        --surface-dark: rgba(18, 18, 20, 0.7);
+        --accent: linear-gradient(135deg, #8B5CF6 0%, #3B82F6 100%);
+        --text-muted: #888899;
+        --border-color: rgba(255, 255, 255, 0.1);
+    }
+
     .stApp {
+        background-color: var(--bg-dark);
+        color: #E2E8F0;
         font-family: 'Inter', sans-serif;
     }
-    
+
+    /* Sidebar Glassmorphism */
+    [data-testid="stSidebar"] {
+        background-color: rgba(10, 10, 11, 0.9) !important;
+        border-right: 1px solid var(--border-color);
+        backdrop-filter: blur(20px);
+    }
+
     .main-header {
-        font-size: 3rem;
+        font-size: 3.5rem;
         font-weight: 800;
-        background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
+        background: var(--accent);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.25rem;
+        letter-spacing: -2px;
         display: flex;
-        align-items: baseline;
-        gap: 15px;
+        align-items: center;
+        gap: 20px;
     }
 
     .main-header span {
-        -webkit-text-fill-color: #888899;
-        font-size: 1.5rem;
-        font-weight: 400;
+        -webkit-text-fill-color: var(--text-muted);
+        font-size: 1.25rem;
+        font-weight: 500;
+        letter-spacing: 0;
     }
     
     .sub-header {
-        font-size: 1.2rem;
-        color: #888899;
-        margin-bottom: 2rem;
+        font-size: 1.1rem;
+        color: var(--text-muted);
+        margin-bottom: 3rem;
+        font-weight: 400;
     }
 
+    /* Re-styling primary buttons */
     .stButton>button {
-        background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
-        color: white;
-        border: none;
-        padding: 0.75rem 1.5rem;
-        border-radius: 12px;
-        font-weight: 600;
-        width: 100%;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        text-transform: uppercase;
-        letter-spacing: 1px;
+        background: var(--accent) !important;
+        color: white !important;
+        border: none !important;
+        padding: 0.8rem 1.5rem !important;
+        border-radius: 12px !important;
+        font-weight: 600 !important;
+        width: 100% !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        text-transform: none !important;
+        letter-spacing: 0.5px !important;
+        box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3) !important;
     }
     
     .stButton>button:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 25px rgba(106, 17, 203, 0.5);
-        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(139, 92, 246, 0.5) !important;
     }
 
+    /* Glass Cards */
     .card {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
+        background: var(--surface-dark);
+        backdrop-filter: blur(12px);
         padding: 1.5rem;
-        border-radius: 16px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        margin-bottom: 1rem;
+        border-radius: 20px;
+        border: 1px solid var(--border-color);
+        margin-bottom: 1.5rem;
+        transition: transform 0.3s ease;
+    }
+    
+    .card:hover {
+        border-color: rgba(139, 92, 246, 0.4);
     }
 
     .url-box {
-        background: #16213e;
-        padding: 10px;
-        border-radius: 8px;
-        font-family: 'Courier New', monospace;
-        font-size: 0.9rem;
-        color: #4cc9f0;
-        border: 1px solid #4361ee;
-        margin-top: 5px;
+        background: rgba(0, 0, 0, 0.3);
+        padding: 12px;
+        border-radius: 10px;
+        font-family: 'Inter', monospace;
+        font-size: 0.85rem;
+        color: #60A5FA;
+        border: 1px solid rgba(96, 165, 250, 0.2);
+        margin-top: 10px;
         word-break: break-all;
+        position: relative;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+        background: var(--bg-dark);
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #2D2D30;
+        border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #3B3B3F;
+    }
+
+    /* Empty state styling */
+    .empty-state {
+        text-align: center;
+        padding: 5rem 2rem;
+        background: var(--surface-dark);
+        border-radius: 30px;
+        border: 1px dashed var(--border-color);
+        margin: 2rem 0;
+    }
+
+    .empty-state h3 {
+        color: #8B5CF6;
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .copy-btn {
+        background: rgba(139, 92, 246, 0.1);
+        color: #A78BFA;
+        border: 1px solid rgba(139, 92, 246, 0.2);
+        padding: 4px 12px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        cursor: pointer;
+        margin-top: 8px;
+        display: inline-block;
+        transition: all 0.2s ease;
+    }
+
+    .copy-btn:hover {
+        background: rgba(139, 92, 246, 0.2);
+        color: white;
+    }
+
+    .live-preview-link {
+        color: #60A5FA;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9rem;
+        margin-top: 10px;
+        padding: 8px;
+        border-radius: 8px;
+        background: rgba(96, 165, 250, 0.05);
+        border: 1px solid rgba(96, 165, 250, 0.1);
+    }
+    
+    .live-preview-link:hover {
+        background: rgba(96, 165, 250, 0.1);
+        border-color: rgba(96, 165, 250, 0.3);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -149,6 +245,18 @@ with st.sidebar:
     gh_branch = st.text_input("Target Branch", value="main")
     gh_folder = st.text_input("Target Folder", value="assets")
     
+    if gh_repo and gh_branch and gh_folder:
+        folder_url = f"https://github.com/{gh_repo}/tree/{gh_branch}/{gh_folder}"
+        st.markdown(f"""
+            <a href="{folder_url}" target="_blank" class="live-preview-link">
+                📁 View Repository Folder ↗
+            </a>
+        """, unsafe_allow_html=True)
+    
+    st.divider()
+    st.markdown("### 🏷️ Bulk Renaming")
+    base_name = st.text_input("Base Filename", placeholder="e.g. project-assets", help="Files will be named base-1.webp, base-2.webp, etc.")
+    
     st.divider()
     st.markdown("### ⚙️ Optimization")
     quality = st.slider("WebP Quality", 10, 100, 80)
@@ -182,8 +290,11 @@ if uploaded_files:
             # Pre-calculate names to avoid collisions/complexity in threads
             processed_names = []
             for i, f in enumerate(uploaded_files):
-                stem = Path(f.name).stem
-                processed_names.append(f"{stem}-{i+1}.webp")
+                if base_name:
+                    processed_names.append(f"{base_name}-{i+1}.webp")
+                else:
+                    stem = Path(f.name).stem
+                    processed_names.append(f"{stem}-{i+1}.webp")
             
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 futures = [executor.submit(optimize_image, f, n, quality) for f, n in zip(uploaded_files, processed_names)]
@@ -215,8 +326,11 @@ if uploaded_files:
                     with cols[idx % 3]:
                         st.markdown(f'<div class="card">', unsafe_allow_html=True)
                         st.image(res['url'], caption=res['name'], use_container_width=True)
-                        st.markdown(f'<b>Raw URL:</b>', unsafe_allow_html=True)
+                        st.markdown(f'<b>URL Path</b>', unsafe_allow_html=True)
                         st.code(res['url'], language="text")
+                        
+                        # In Streamlit, native clipboard copy is hard via pure HTML without hacks, 
+                        # so we use the st.code standard copy button or a small message.
                         st.markdown('</div>', unsafe_allow_html=True)
             
             errors = [r for r in final_results if not r['success']]
@@ -228,9 +342,13 @@ if uploaded_files:
 else:
     # Empty state / Welcome
     st.markdown("""
-    <div style="text-align: center; padding: 3rem; background: rgba(255,255,255,0.03); border-radius: 20px; border: 1px dashed rgba(255,255,255,0.1);">
-        <h3 style="color: #6a11cb;">Ready to start?</h3>
-        <p>Drop your images above and configure your GitHub settings in the sidebar.</p>
-        <p style="font-size: 0.8rem; color: #666;">Supports PNG, JPG, JPEG, and WebP formats.</p>
+    <div class="empty-state">
+        <h3>Ready to optimize?</h3>
+        <p style="color: var(--text-muted); max-width: 400px; margin: 0 auto;">
+            Drop your images above to begin. We'll handle the conversion to <b>WebP</b> and deploy directly to your GitHub repository.
+        </p>
+        <div style="margin-top: 1.5rem; font-size: 0.8rem; color: #555;">
+            Supports PNG, JPG, JPEG, and WebP
+        </div>
     </div>
     """, unsafe_allow_html=True)
