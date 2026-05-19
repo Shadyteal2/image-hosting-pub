@@ -31,7 +31,7 @@ st.markdown("""
     :root {
         --bg-dark: #050507;
         --surface-dark: rgba(13, 13, 17, 0.7);
-        --accent: linear-gradient(135deg, #A855F7 0%, #6366F1 50%, #06B6D4 100%);
+        --accent: linear-gradient(135deg, #00F5D4 0%, #01BEFE 50%, #00E575 100%);
         --text-primary: #F8FAFC;
         --text-secondary: #94A3B8;
         --border-color: rgba(255, 255, 255, 0.06);
@@ -67,23 +67,23 @@ st.markdown("""
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
     .stTextInput input:focus {
-        border-color: #6366F1 !important;
-        box-shadow: 0 0 20px rgba(99, 102, 241, 0.2) !important;
+        border-color: #00F5D4 !important;
+        box-shadow: 0 0 20px rgba(0, 245, 212, 0.25) !important;
         background-color: rgba(15, 15, 22, 0.9) !important;
     }
 
     /* Custom Uploader Glow */
     [data-testid="stFileUploader"] {
         background: rgba(10, 10, 14, 0.4) !important;
-        border: 1px dashed rgba(99, 102, 241, 0.3) !important;
+        border: 1px dashed rgba(0, 245, 212, 0.2) !important;
         border-radius: 24px !important;
         padding: 2.5rem !important;
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
     [data-testid="stFileUploader"]:hover {
-        border-color: #A855F7 !important;
+        border-color: #00F5D4 !important;
         background: rgba(15, 15, 22, 0.6) !important;
-        box-shadow: 0 0 35px rgba(168, 85, 247, 0.15) !important;
+        box-shadow: 0 0 35px rgba(0, 245, 212, 0.15) !important;
         transform: translateY(-2px);
     }
 
@@ -97,8 +97,8 @@ st.markdown("""
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
     [data-testid="stElementContainer"] div[data-testid="stVerticalBlockBorderWrapper"]:hover {
-        border-color: rgba(99, 102, 241, 0.3) !important;
-        box-shadow: 0 10px 40px rgba(99, 102, 241, 0.08) !important;
+        border-color: rgba(0, 245, 212, 0.25) !important;
+        box-shadow: 0 10px 40px rgba(0, 245, 212, 0.08) !important;
     }
 
     .main-header {
@@ -134,23 +134,23 @@ st.markdown("""
     /* Primary buttons */
     .stButton>button {
         background: var(--accent) !important;
-        color: white !important;
+        color: #050507 !important;
         border: none !important;
         padding: 0.9rem 1.8rem !important;
         border-radius: 14px !important;
-        font-weight: 600 !important;
+        font-weight: 700 !important;
         font-size: 1rem !important;
         width: 100% !important;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
         text-transform: none !important;
         letter-spacing: 0.2px !important;
-        box-shadow: 0 4px 20px rgba(99, 102, 241, 0.25) !important;
+        box-shadow: 0 4px 20px rgba(0, 245, 212, 0.2) !important;
         font-family: 'Outfit', sans-serif !important;
     }
     
     .stButton>button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 12px 30px rgba(168, 85, 247, 0.4) !important;
+        box-shadow: 0 12px 30px rgba(0, 229, 117, 0.3) !important;
     }
     
     /* Sliders and Dividers */
@@ -185,7 +185,7 @@ st.markdown("""
         transition: border-color 0.3s ease;
     }
     .empty-state:hover {
-        border-color: rgba(99, 102, 241, 0.3);
+        border-color: rgba(0, 245, 212, 0.25);
     }
 
     .empty-state h3 {
@@ -484,7 +484,7 @@ if uploaded_files:
             skeleton_placeholder = st.empty()
             skeleton_placeholder.markdown("""
                 <div style="padding: 1.5rem; background: rgba(18, 18, 20, 0.7); border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 2rem;">
-                    <h4 style="color: #8B5CF6; margin-bottom: 1rem; font-family: 'Inter', sans-serif;">⚡ Processing and Syncing...</h4>
+                    <h4 style="background: var(--accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 1rem; font-family: 'Outfit', sans-serif; font-weight: 700; display: inline-block;">⚡ Processing and Syncing...</h4>
                     <div class="skeleton" style="height: 20px; width: 60%; margin-bottom: 12px;"></div>
                     <div class="skeleton" style="height: 15px; width: 85%; margin-bottom: 12px;"></div>
                     <div class="skeleton" style="height: 15px; width: 40%; margin-bottom: 24px;"></div>
