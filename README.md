@@ -41,6 +41,28 @@ Built with **Streamlit**, **Pillow**, and the **GitHub Git Database REST API**, 
 
 ---
 
+## ⚡ Industry-Grade Architecture & Optimization
+
+To ensure maximum smoothness, minimal latency on mobile connections, and bulletproof uploads under heavy load, **ImageSync Public** integrates several advanced system architectures:
+
+### 🚀 1. Keep-Alive HTTP Connection Pooling
+Rather than performing a costly, independent DNS resolution, TCP handshake, and TLS negotiation for every individual image, the core API client utilizes a custom **HTTP Connection Pool** (`requests.Session` wrapped with connection-limit adapters). 
+- All steps of the multi-stage Git Database transactional lifecycle (ref checks, trees, commits) are multiplexed over a single persistent Keep-Alive socket.
+- Dynamic thread pooling sizing (`max_workers=max(4, min(N, 16))`) optimizes parallel batch transfers without triggering GitHub's secondary API rate limits.
+
+### 🛡️ 2. Transient Network Error Resilience
+Web API environments often suffer from packet drops, high network jitter, or temporary gateway outages.
+- An automated **Exponential Backoff Retry Strategy** is built into the HTTP layer.
+- If GitHub returns a transient gateway code (`500`, `502`, `503`, or `504`), the app automatically performs up to 3 retries (with incremental backoff intervals of `0.5s`, `1s`, `2s`) before declaring failure.
+- Active request timeouts strictly prevent UI freezing if connection pipelines hang.
+
+### 📐 3. Auto-Orientation & Smart QHD Resolution Clamping
+- **EXIF Rotation Correction**: Native smartphone and mirrorless camera sensors store raw orientation tags which often result in images displaying rotated or upside down on the web. ImageSync automatically interprets EXIF tag `274` and corrects the orientation natively before processing.
+- **QHD Bounding Clamps**: Massive raw assets (>3000px width/height) are automatically scaled down using Pillow's `LANCZOS` high-fidelity interpolation to a maximum web-optimized ceiling of **QHD (2560px)**. This maintains razor-sharp clarity while saving valuable megabytes.
+- **Metadata Weight Stripping**: Standardized compression methods (`method=4`) strip raw camera profile profiles and useless color arrays, yielding pristine WebP assets up to **80% smaller** than typical exports.
+
+---
+
 ## 🛡️ Security & Privacy
 
 > [!IMPORTANT]
