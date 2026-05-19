@@ -5,8 +5,11 @@ import time
 import io
 import requests
 import base64
-from PIL import Image
+from PIL import Image, ExifTags
 from pathlib import Path
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
+
 
 # --- Configuration ---
 st.set_page_config(
@@ -236,23 +239,64 @@ st.markdown("""
 
 # --- Logic Functions ---
 
+def create_robust_session():
+    """Create a requests.Session with connection pooling, Keep-Alive, and retry policies."""
+    session = requests.Session()
+    retry_strategy = Retry(
+        total=3,
+        backoff_factor=0.5,
+        status_forcelist=[500, 502, 503, 504],
+        allowed_methods=["HEAD", "GET", "POST", "PATCH", "PUT"]
+    )
+    adapter = HTTPAdapter(
+        max_retries=retry_strategy,
+        pool_connections=32,
+        pool_maxsize=32
+    )
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
+
 def optimize_image(uploaded_file, name, quality=80):
-    """Process image: resize/convert to WebP and return bytes."""
+    """Process image: fix auto-orientation, limit size (QHD 2560px), convert to WebP, and return bytes."""
     try:
         img = Image.open(uploaded_file)
+        
+        # High-Fidelity Auto-Orientation based on EXIF tag 274
+        try:
+            for orientation in ExifTags.TAGS.keys():
+                if ExifTags.TAGS[orientation] == 'Orientation':
+                    break
+            exif = img._getexif()
+            if exif is not None:
+                val = exif.get(orientation)
+                if val == 3:
+                    img = img.rotate(180, expand=True)
+                elif val == 6:
+                    img = img.rotate(270, expand=True)
+                elif val == 8:
+                    img = img.rotate(90, expand=True)
+        except Exception:
+            pass # Safe fallback for missing/corrupted metadata
+            
         if img.mode in ("RGBA", "P"):
             img = img.convert("RGBA")
         else:
             img = img.convert("RGB")
             
+        # Max resolution ceiling for optimal web hosting performance (QHD 2560px)
+        max_dim = 2560
+        if max(img.size) > max_dim:
+            img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
+            
         buf = io.BytesIO()
-        img.save(buf, "webp", quality=quality)
+        img.save(buf, "WEBP", quality=quality, method=4)
         return {"name": name, "content": buf.getvalue(), "success": True}
     except Exception as e:
         return {"name": name, "error": str(e), "success": False}
 
-def create_github_blob(token, repo, content_bytes):
-    """Create a git blob on GitHub and return its SHA."""
+def create_github_blob(session, token, repo, content_bytes):
+    """Create a git blob on GitHub using connection pooling and return its SHA."""
     url = f"https://api.github.com/repos/{repo}/git/blobs"
     headers = {
         "Authorization": f"token {token}",
@@ -264,7 +308,7 @@ def create_github_blob(token, repo, content_bytes):
         "encoding": "base64"
     }
     try:
-        res = requests.post(url, headers=headers, json=data)
+        res = session.post(url, headers=headers, json=data, timeout=30)
         if res.status_code == 201:
             return {"success": True, "sha": res.json()["sha"]}
         else:
@@ -273,16 +317,18 @@ def create_github_blob(token, repo, content_bytes):
         return {"success": False, "error": str(e)}
 
 def upload_batch_to_github(token, repo, branch, folder, file_infos, commit_message, progress_callback=None):
-    """Upload a batch of files in a single commit using the Git Database API."""
+    """Upload a batch of files in a single commit using pooled connections and concurrent workers."""
     headers = {
         "Authorization": f"token {token}",
         "Accept": "application/vnd.github.v3+json"
     }
     
     try:
+        session = create_robust_session()
+        
         # 1. Get the latest commit SHA of the branch reference
         ref_url = f"https://api.github.com/repos/{repo}/git/ref/heads/{branch}"
-        ref_res = requests.get(ref_url, headers=headers)
+        ref_res = session.get(ref_url, headers=headers, timeout=20)
         if ref_res.status_code != 200:
             return {"success": False, "error": f"Failed to get branch reference: {ref_res.json().get('message', 'Unknown error')}"}
         
@@ -290,15 +336,16 @@ def upload_batch_to_github(token, repo, branch, folder, file_infos, commit_messa
         
         # 2. Get the base tree SHA of that commit
         commit_url = f"https://api.github.com/repos/{repo}/git/commits/{commit_sha}"
-        commit_res = requests.get(commit_url, headers=headers)
+        commit_res = session.get(commit_url, headers=headers, timeout=20)
         if commit_res.status_code != 200:
             return {"success": False, "error": f"Failed to get base commit: {commit_res.json().get('message', 'Unknown error')}"}
             
         base_tree_sha = commit_res.json()["tree"]["sha"]
         
-        # 3. Upload all files as blobs in parallel
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = {executor.submit(create_github_blob, token, repo, img["content"]): img for img in file_infos}
+        # 3. Upload all files as blobs in parallel using custom sized concurrent workers
+        max_workers = max(4, min(len(file_infos), 16))
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(create_github_blob, session, token, repo, img["content"]): img for img in file_infos}
             
             tree_nodes = []
             errors = []
@@ -328,7 +375,7 @@ def upload_batch_to_github(token, repo, branch, folder, file_infos, commit_messa
             "base_tree": base_tree_sha,
             "tree": tree_nodes
         }
-        tree_res = requests.post(tree_url, headers=headers, json=tree_data)
+        tree_res = session.post(tree_url, headers=headers, json=tree_data, timeout=30)
         if tree_res.status_code != 201:
             return {"success": False, "error": f"Failed to create new tree: {tree_res.json().get('message', 'Unknown error')}"}
             
@@ -341,7 +388,7 @@ def upload_batch_to_github(token, repo, branch, folder, file_infos, commit_messa
             "tree": new_tree_sha,
             "parents": [commit_sha]
         }
-        commit_post_res = requests.post(commit_post_url, headers=headers, json=commit_data)
+        commit_post_res = session.post(commit_post_url, headers=headers, json=commit_data, timeout=30)
         if commit_post_res.status_code != 201:
             return {"success": False, "error": f"Failed to create commit: {commit_post_res.json().get('message', 'Unknown error')}"}
             
@@ -353,7 +400,7 @@ def upload_batch_to_github(token, repo, branch, folder, file_infos, commit_messa
             "sha": new_commit_sha,
             "force": False
         }
-        ref_update_res = requests.patch(ref_update_url, headers=headers, json=ref_update_data)
+        ref_update_res = session.patch(ref_update_url, headers=headers, json=ref_update_data, timeout=30)
         if ref_update_res.status_code != 200:
             return {"success": False, "error": f"Failed to update reference: {ref_update_res.json().get('message', 'Unknown error')}"}
             
