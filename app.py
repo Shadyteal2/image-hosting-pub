@@ -204,37 +204,122 @@ def optimize_image(uploaded_file, name, quality=80):
     except Exception as e:
         return {"name": name, "error": str(e), "success": False}
 
-def upload_to_github(token, repo, branch, folder, file_info):
-    """Upload a single file to GitHub via REST API."""
-    url = f"https://api.github.com/repos/{repo}/contents/{folder}/{file_info['name']}"
+def create_github_blob(token, repo, content_bytes):
+    """Create a git blob on GitHub and return its SHA."""
+    url = f"https://api.github.com/repos/{repo}/git/blobs"
+    headers = {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    content_b64 = base64.b64encode(content_bytes).decode('utf-8')
+    data = {
+        "content": content_b64,
+        "encoding": "base64"
+    }
+    try:
+        res = requests.post(url, headers=headers, json=data)
+        if res.status_code == 201:
+            return {"success": True, "sha": res.json()["sha"]}
+        else:
+            return {"success": False, "error": res.json().get('message', 'Unknown error')}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+def upload_batch_to_github(token, repo, branch, folder, file_infos, commit_message, progress_callback=None):
+    """Upload a batch of files in a single commit using the Git Database API."""
     headers = {
         "Authorization": f"token {token}",
         "Accept": "application/vnd.github.v3+json"
     }
     
-    # 1. Check if file exists to get SHA (for updates)
-    sha = None
-    response = requests.get(url, headers=headers)
-    if response.status_code == 200:
-        sha = response.json().get('sha')
-    
-    # 2. Upload/Update
-    content_b64 = base64.b64encode(file_info['content']).decode('utf-8')
-    data = {
-        "message": f"Upload {file_info['name']} via ImageSync Public",
-        "content": content_b64,
-        "branch": branch
-    }
-    if sha:
-        data["sha"] = sha
+    try:
+        # 1. Get the latest commit SHA of the branch reference
+        ref_url = f"https://api.github.com/repos/{repo}/git/ref/heads/{branch}"
+        ref_res = requests.get(ref_url, headers=headers)
+        if ref_res.status_code != 200:
+            return {"success": False, "error": f"Failed to get branch reference: {ref_res.json().get('message', 'Unknown error')}"}
         
-    res = requests.put(url, headers=headers, json=data)
-    if res.status_code in [200, 201]:
-        raw_url = f"https://raw.githubusercontent.com/{repo}/{branch}/{folder}/{file_info['name']}"
-        return {"name": file_info['name'], "url": raw_url, "success": True}
-    else:
-        error_msg = res.json().get('message', 'Unknown error')
-        return {"name": file_info['name'], "error": error_msg, "success": False}
+        commit_sha = ref_res.json()["object"]["sha"]
+        
+        # 2. Get the base tree SHA of that commit
+        commit_url = f"https://api.github.com/repos/{repo}/git/commits/{commit_sha}"
+        commit_res = requests.get(commit_url, headers=headers)
+        if commit_res.status_code != 200:
+            return {"success": False, "error": f"Failed to get base commit: {commit_res.json().get('message', 'Unknown error')}"}
+            
+        base_tree_sha = commit_res.json()["tree"]["sha"]
+        
+        # 3. Upload all files as blobs in parallel
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = {executor.submit(create_github_blob, token, repo, img["content"]): img for img in file_infos}
+            
+            tree_nodes = []
+            errors = []
+            for i, future in enumerate(concurrent.futures.as_completed(futures)):
+                img = futures[future]
+                res = future.result()
+                if res["success"]:
+                    path = f"{folder}/{img['name']}"
+                    tree_nodes.append({
+                        "path": path,
+                        "mode": "100644",
+                        "type": "blob",
+                        "sha": res["sha"]
+                    })
+                else:
+                    errors.append(f"Blob failed for {img['name']}: {res['error']}")
+                
+                if progress_callback:
+                    progress_callback(i + 1, len(file_infos), img["name"])
+                    
+        if errors:
+            return {"success": False, "error": "; ".join(errors)}
+            
+        # 4. Create a new tree with base_tree pointing to existing files
+        tree_url = f"https://api.github.com/repos/{repo}/git/trees"
+        tree_data = {
+            "base_tree": base_tree_sha,
+            "tree": tree_nodes
+        }
+        tree_res = requests.post(tree_url, headers=headers, json=tree_data)
+        if tree_res.status_code != 201:
+            return {"success": False, "error": f"Failed to create new tree: {tree_res.json().get('message', 'Unknown error')}"}
+            
+        new_tree_sha = tree_res.json()["sha"]
+        
+        # 5. Create a new commit pointing to the new tree and the parent commit
+        commit_post_url = f"https://api.github.com/repos/{repo}/git/commits"
+        commit_data = {
+            "message": commit_message,
+            "tree": new_tree_sha,
+            "parents": [commit_sha]
+        }
+        commit_post_res = requests.post(commit_post_url, headers=headers, json=commit_data)
+        if commit_post_res.status_code != 201:
+            return {"success": False, "error": f"Failed to create commit: {commit_post_res.json().get('message', 'Unknown error')}"}
+            
+        new_commit_sha = commit_post_res.json()["sha"]
+        
+        # 6. Update the branch reference to point to the new commit
+        ref_update_url = f"https://api.github.com/repos/{repo}/git/refs/heads/{branch}"
+        ref_update_data = {
+            "sha": new_commit_sha,
+            "force": False
+        }
+        ref_update_res = requests.patch(ref_update_url, headers=headers, json=ref_update_data)
+        if ref_update_res.status_code != 200:
+            return {"success": False, "error": f"Failed to update reference: {ref_update_res.json().get('message', 'Unknown error')}"}
+            
+        # Construct success uploads in standard format
+        raw_urls = []
+        for img in file_infos:
+            raw_url = f"https://raw.githubusercontent.com/{repo}/{branch}/{folder}/{img['name']}"
+            raw_urls.append({"name": img['name'], "url": raw_url, "success": True})
+            
+        return {"success": True, "uploads": raw_urls}
+        
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 # --- Sidebar Configuration ---
 
@@ -302,16 +387,36 @@ if uploaded_files:
                     results_process.append(future.result())
                     progress_bar.progress(int(((i + 1) / len(uploaded_files)) * 50))
             
-            # Step 2: Upload sequentially to avoid concurrent commit conflicts on GitHub
+            # Step 2: Deploy to GitHub in a single commit using the Git Database API
             status.markdown("☁️ **Step 2/2: Deploying to GitHub...**")
-            final_results = []
             valid_images = [r for r in results_process if r['success']]
             
-            for i, img in enumerate(valid_images):
-                status.markdown(f"☁️ **Step 2/2: Deploying {img['name']} ({i+1}/{len(valid_images)})...**")
-                res = upload_to_github(gh_token, gh_repo, gh_branch, gh_folder, img)
-                final_results.append(res)
-                progress_bar.progress(50 + int(((i + 1) / len(valid_images)) * 50))
+            if valid_images:
+                commit_msg = f"Upload {len(valid_images)} images via ImageSync Public"
+                if base_name:
+                    commit_msg = f"Upload {base_name} assets ({len(valid_images)} files) via ImageSync Public"
+                
+                def update_progress(current, total, name):
+                    status.markdown(f"☁️ **Step 2/2: Uploaded {name} ({current}/{total})...**")
+                    progress_bar.progress(50 + int((current / total) * 50))
+                
+                res = upload_batch_to_github(
+                    token=gh_token,
+                    repo=gh_repo,
+                    branch=gh_branch,
+                    folder=gh_folder,
+                    file_infos=valid_images,
+                    commit_message=commit_msg,
+                    progress_callback=update_progress
+                )
+                
+                if res["success"]:
+                    final_results = res["uploads"]
+                else:
+                    st.error(f"💥 Batch deployment failed: {res['error']}")
+                    final_results = [{"name": img['name'], "error": res["error"], "success": False} for img in valid_images]
+            else:
+                final_results = []
             
             status.empty()
             progress_bar.empty()
