@@ -302,16 +302,16 @@ if uploaded_files:
                     results_process.append(future.result())
                     progress_bar.progress(int(((i + 1) / len(uploaded_files)) * 50))
             
-            # Step 2: Upload in parallel
+            # Step 2: Upload sequentially to avoid concurrent commit conflicts on GitHub
             status.markdown("☁️ **Step 2/2: Deploying to GitHub...**")
             final_results = []
             valid_images = [r for r in results_process if r['success']]
             
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                futures = [executor.submit(upload_to_github, gh_token, gh_repo, gh_branch, gh_folder, img) for img in valid_images]
-                for i, future in enumerate(concurrent.futures.as_completed(futures)):
-                    final_results.append(future.result())
-                    progress_bar.progress(50 + int(((i + 1) / len(valid_images)) * 50))
+            for i, img in enumerate(valid_images):
+                status.markdown(f"☁️ **Step 2/2: Deploying {img['name']} ({i+1}/{len(valid_images)})...**")
+                res = upload_to_github(gh_token, gh_repo, gh_branch, gh_folder, img)
+                final_results.append(res)
+                progress_bar.progress(50 + int(((i + 1) / len(valid_images)) * 50))
             
             status.empty()
             progress_bar.empty()
