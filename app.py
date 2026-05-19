@@ -16,6 +16,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Initialize Session State Keys
+if "uploader_key" not in st.session_state:
+    st.session_state.uploader_key = 0
+
 # --- Styling ---
 st.markdown("""
 <style>
@@ -183,6 +187,23 @@ st.markdown("""
     .live-preview-link:hover {
         background: rgba(96, 165, 250, 0.1);
         border-color: rgba(96, 165, 250, 0.3);
+    }
+
+    /* Skeleton Loading effect */
+    .skeleton {
+        background: linear-gradient(90deg, rgba(24, 24, 27, 0.6) 25%, rgba(39, 39, 42, 0.8) 50%, rgba(24, 24, 27, 0.6) 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+        border-radius: 8px;
+    }
+
+    @keyframes loading {
+        0% {
+            background-position: 200% 0;
+        }
+        100% {
+            background-position: -200% 0;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -357,16 +378,46 @@ st.markdown('<div class="sub-header">Professional Image Optimization & GitHub Ho
 uploaded_files = st.file_uploader(
     "Upload images (Max 200MB total)", 
     type=['png', 'jpg', 'jpeg', 'webp'], 
-    accept_multiple_files=True
+    accept_multiple_files=True,
+    key=f"uploader_{st.session_state.uploader_key}"
 )
 
 if uploaded_files:
     if not (gh_token and gh_repo):
         st.warning("⚠️ Please provide your GitHub Token and Repository Path in the sidebar to proceed.")
     else:
-        if st.button("🚀 Process & Deploy"):
+        # Action Buttons Summary Card
+        with st.container(border=True):
+            st.markdown(f"📊 **Selected {len(uploaded_files)} files for optimization**")
+            
+            # File list preview
+            with st.expander(f"📁 Selected Files List ({len(uploaded_files)})", expanded=True):
+                for f in uploaded_files:
+                    st.markdown(f"- `{f.name}` ({(f.size / 1024):.1f} KB)")
+            
+            col_clear, col_deploy = st.columns([1, 2])
+            with col_clear:
+                if st.button("🧹 Clear All Files", use_container_width=True):
+                    st.session_state.uploader_key += 1
+                    st.rerun()
+            with col_deploy:
+                deploy_btn = st.button("🚀 Process & Deploy", use_container_width=True)
+        
+        if deploy_btn:
             progress_bar = st.progress(0)
             status = st.empty()
+            
+            # Show a beautiful pulsing skeleton loader
+            skeleton_placeholder = st.empty()
+            skeleton_placeholder.markdown("""
+                <div style="padding: 1.5rem; background: rgba(18, 18, 20, 0.7); border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 2rem;">
+                    <h4 style="color: #8B5CF6; margin-bottom: 1rem; font-family: 'Inter', sans-serif;">⚡ Processing and Syncing...</h4>
+                    <div class="skeleton" style="height: 20px; width: 60%; margin-bottom: 12px;"></div>
+                    <div class="skeleton" style="height: 15px; width: 85%; margin-bottom: 12px;"></div>
+                    <div class="skeleton" style="height: 15px; width: 40%; margin-bottom: 24px;"></div>
+                    <div class="skeleton" style="height: 120px; width: 100%;"></div>
+                </div>
+            """, unsafe_allow_html=True)
             
             # Step 1: Optimize in parallel
             status.markdown("🎨 **Step 1/2: Optimizing Images...**")
@@ -418,6 +469,8 @@ if uploaded_files:
             else:
                 final_results = []
             
+            # Clear skeleton and loading states when done
+            skeleton_placeholder.empty()
             status.empty()
             progress_bar.empty()
             
@@ -429,14 +482,11 @@ if uploaded_files:
                 cols = st.columns(3)
                 for idx, res in enumerate(success_uploads):
                     with cols[idx % 3]:
-                        st.markdown(f'<div class="card">', unsafe_allow_html=True)
-                        st.image(res['url'], caption=res['name'], use_container_width=True)
-                        st.markdown(f'<b>URL Path</b>', unsafe_allow_html=True)
-                        st.code(res['url'], language="text")
-                        
-                        # In Streamlit, native clipboard copy is hard via pure HTML without hacks, 
-                        # so we use the st.code standard copy button or a small message.
-                        st.markdown('</div>', unsafe_allow_html=True)
+                        with st.container(border=True):
+                            st.markdown(f"**🔗 {res['name']}**")
+                            st.code(res['url'], language="text")
+                            with st.expander("👁️ View Preview", expanded=False):
+                                st.image(res['url'], use_container_width=True)
             
             errors = [r for r in final_results if not r['success']]
             if errors:
