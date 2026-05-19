@@ -1,6 +1,30 @@
-# 🖼️ ImageSync Public | Global Image Hosting
+# 🚀 ImageSync Public | Global Image Hosting
 
-A high-performance, professional-grade web dashboard designed for developers and creators who need a fast, secure, and reliable way to optimize, compress, and host images directly on GitHub. 
+<div align="center">
+  
+  <h3>⚡ Professional Image Optimization & Direct GitHub Hosting ⚡</h3>
+  
+  <a href="https://image-hosting-byshady.streamlit.app/" target="_blank">
+    <img src="https://static.streamlit.io/badges/streamlit_badge_black_white.svg" width="320" alt="Open Live Site">
+  </a>
+  
+  <br><br>
+  
+  [![Live Demo](https://img.shields.io/badge/🌐_Live_Application-Click_to_Open-8B5CF6?style=for-the-badge&logo=streamlit&logoColor=white)](https://image-hosting-byshady.streamlit.app/)
+  
+  <br><br>
+  
+  <img src="https://raw.githubusercontent.com/Shadyteal2/image-hosting-pub/main/assets/ImageSync.jpeg" width="95%" alt="ImageSync Preview" style="border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);">
+
+</div>
+
+---
+
+## 🌐 Live Application
+
+Access the live service directly in your browser: **[https://image-hosting-byshady.streamlit.app/](https://image-hosting-byshady.streamlit.app/)**
+
+**ImageSync Public** is a professional-grade, high-performance web dashboard designed for developers and creators who need a fast, secure, and reliable way to optimize, compress, and host images directly on GitHub. 
 
 Built with **Streamlit**, **Pillow**, and the **GitHub Git Database REST API**, it offers an atomic, single-commit workflow from your local device to your repository—with no local Git or complex command line tools required.
 
@@ -95,3 +119,9 @@ If you want your repository paths or target folders to be pre-filled so you don'
 ## 📜 License
 
 Distributed under the **MIT License**. See `LICENSE` for more information.
+
+---
+
+<div align="center">
+  Made with 💜 by <b>ShadyBilla</b>
+</div>
