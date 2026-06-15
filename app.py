@@ -309,7 +309,7 @@ def create_github_blob(session, token, repo, content_bytes):
     """Create a git blob on GitHub using connection pooling and return its SHA."""
     url = f"https://api.github.com/repos/{repo}/git/blobs"
     headers = {
-        "Authorization": f"token {token}",
+        "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github.v3+json",
     }
     content_b64 = base64.b64encode(content_bytes).decode("utf-8")
@@ -332,7 +332,7 @@ def upload_batch_to_github(
 ):
     """Upload a batch of files in a single commit using pooled connections and concurrent workers."""
     headers = {
-        "Authorization": f"token {token}",
+        "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github.v3+json",
     }
 
